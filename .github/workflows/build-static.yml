@@ -1,0 +1,100 @@
+name: Build self-host static bundle
+
+# Builds the deployable site from public/ and publishes it:
+#   - every run: a workflow artifact (Actions tab, needs a GitHub login to download)
+#   - main: the rolling release "selfhost-latest" (stable asset names, for update scripts)
+#   - tag v*: a versioned GitHub Release
+#
+# The build itself is tools/build-site-bundle.sh: copy public/, stamp the version
+# (tools/web-release.sh), checksum, tar/zip. No Node or Python is needed to serve the result.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: static-bundle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js (site validation only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check the site
+        run: |
+          test -f public/index.html
+          node tools/csp.mjs --check
+
+      - name: Build the bundle
+        id: build
+        run: |
+          tools/build-site-bundle.sh dist
+          printf 'version=%s\n' "$(cat dist/VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibeoffice-site-${{ steps.build.outputs.version }}
+          path: |
+            dist/vibeoffice-site-*.tar.gz
+            dist/vibeoffice-site-*.zip
+            dist/vibeoffice-site.tar.gz
+            dist/vibeoffice-site.zip
+            dist/SHA256SUMS
+            dist/SHA256SUMS.latest
+            dist/VERSION
+            dist/build-info.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish versioned release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          V="${{ steps.build.outputs.version }}"
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" \
+              "dist/vibeoffice-site-$V.tar.gz" "dist/vibeoffice-site-$V.zip" \
+              dist/SHA256SUMS dist/build-info.json dist/VERSION \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "dist/vibeoffice-site-$V.tar.gz" "dist/vibeoffice-site-$V.zip" \
+              dist/SHA256SUMS dist/build-info.json dist/VERSION \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "VibeOffice self-host $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
+
+      - name: Update rolling release (main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          if ! gh release view selfhost-latest --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create selfhost-latest --repo "$GITHUB_REPOSITORY" \
+              --title "VibeOffice self-host bundle (latest)" \
+              --notes "每次 main 构建自动更新。稳定下载：vibeoffice-site.tar.gz / vibeoffice-site.zip；校验：SHA256SUMS.latest；版本见 VERSION。" \
+              --latest=false
+          fi
+          gh release upload selfhost-latest --repo "$GITHUB_REPOSITORY" --clobber \
+            dist/vibeoffice-site.tar.gz dist/vibeoffice-site.zip \
+            dist/SHA256SUMS.latest dist/build-info.json dist/VERSION

@@ -1,0 +1,45 @@
+name: Sync with upstream
+
+# Optional: fast-forward this fork's main to tcchen2026/VibeOffice main, then start the
+# bundle build. Run it from the Actions tab (workflow_dispatch), or uncomment the schedule
+# below to check for upstream changes every day.
+#
+# The fork's own commits (this workflow and tools/build-site-bundle.sh) are rebased on top of
+# upstream, so a merge conflict stops here instead of silently losing them. Pushes made with
+# GITHUB_TOKEN do not start other workflows, which is why the build is dispatched explicitly.
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '23 4 * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase onto upstream main
+        run: |
+          set -eu
+          git remote add upstream https://github.com/tcchen2026/VibeOffice.git
+          git fetch upstream main
+          git rebase upstream/main
+          git push origin main
+
+      - name: Start the bundle build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-static.yml --repo "$GITHUB_REPOSITORY" --ref main

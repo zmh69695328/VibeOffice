@@ -12,3 +12,4 @@ node_modules
 !/.github
 /refs
 /todos
+/dist
