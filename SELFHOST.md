@@ -183,13 +183,24 @@ ssh -N -L 8080:127.0.0.1:8080 user@server
 
 浏览器打开 `http://127.0.0.1:8080/`。`127.0.0.1` 既是安全上下文，也在 Service Worker 白名单里，因此**密码文件和离线缓存都能用**；但注意上游白名单写的是 `127.0.0.1`，不是 `localhost`。
 
-## 7. 与上游同步
+## 7. 默认主题：纸张 2016（Paper 2016）
+
+本 fork 把网页版的默认 look 从上游的 Classic 改成了 Paper 2016（功能区/ribbon 布局）。
+
+- 默认值只定义在 `public/common/look.js` 的 `DEFAULT_LOOK` 一处；`public/common/suite.js` 通过 `VO.DEFAULT_LOOK` 读取同一个值（读不到时回退 `'classic'`，作为独立加载时的兜底）。改默认主题只改 `DEFAULT_LOOK` 即可。
+- 第一次访问、或从未在“主题”里选过的浏览器会以 Paper 2016 启动；用户主动选过 Classic 的浏览器继续用 Classic（选择保存在 `localStorage['vibeoffice.look']`）。
+- 想强制所有人使用默认：让用户清除站点数据/执行 `localStorage.removeItem('vibeoffice.look')`；不建议覆盖用户的显式选择。
+- 想改回 Classic：把 `look.js` 里的 `DEFAULT_LOOK = 'paper2016'` 改成 `'classic'`，推送后流水线会自动重新打包。
+- 桌面版（`desktop/`）的默认仍是 Paper，与本 fork 的网页版无关。
+- 相关测试：`node --test tests/looks.test.mjs`；流水线的 "Check the site" 步骤也会运行它。
+
+## 8. 与上游同步
 
 - 手动：GitHub fork 页面点 **Sync fork**（或本地 `git pull --rebase upstream main`）。
 - 自动：Actions → **Sync with upstream** → Run workflow。它会 `fetch upstream/main`、`rebase`、push，然后手动触发一次 bundle 构建（用 `GITHUB_TOKEN` push 不会自动触发其他 workflow）。想每天自动检查，取消 `sync-upstream.yml` 里 `schedule` 两行的注释即可。
 - 本 fork 的改动只有新增文件（打包脚本、两个 workflow、本文件），rebase 到上游新提交通常不会冲突；如果上游也改了 `.github/workflows/` 同名文件，冲突会停住而不会静默覆盖。
 
-## 8. 安全与维护提示
+## 9. 安全与维护提示
 
 - Release 产物是公开可下载的（fork 为公开仓库时）；里面只有上游本来就公开的静态站点代码，没有用户文件。
 - 服务器更新脚本使用 `rsync --delete`，请确认 `WEB` 指向专用目录（例如 `/var/www/vibeoffice/site`），不要指向系统目录。

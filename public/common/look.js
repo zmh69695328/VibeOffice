@@ -50,7 +50,11 @@
   if (desk) window.addEventListener('vo-settings', (e) => take(e.detail.key, e.detail.value));
   else window.addEventListener('storage', (e) => { if (e.storageArea === localStorage) for (const fn of listeners) fn(e.key, e.newValue); });
 
-  const d = document.documentElement, l = VO.settings.get('vibeoffice.look') || 'classic';
+  /* the web edition's default look: upstream is 'classic'; this fork starts in Paper 2016.
+     common/suite.js reads the same value through VO.DEFAULT_LOOK for its later repaints. */
+  const DEFAULT_LOOK = 'paper2016';
+  VO.DEFAULT_LOOK = DEFAULT_LOOK;
+  const d = document.documentElement, l = VO.settings.get('vibeoffice.look') || DEFAULT_LOOK;
   d.dataset.look = l;
   d.dataset.layout = l === 'paper2016' ? 'ribbon' : 'bars';
 })();

@@ -324,7 +324,8 @@
     { id: 'paper', name: N('Paper'), note: 'Light and calm: warm paper tones, one teal accent, rounded shapes.' },
     { id: 'paper2016', name: N('Paper 2016'), layout: 'ribbon', note: 'Paper with tabs of commands, grouped by task, instead of menus and toolbars.' }];
   const LOOK = 'vibeoffice.look';
-  const storedLook = () => VO.settings.get(LOOK) || 'classic';
+  const DEFAULT_LOOK = VO.DEFAULT_LOOK || 'classic';   // common/look.js sets it (this fork: paper2016)
+  const storedLook = () => VO.settings.get(LOOK) || DEFAULT_LOOK;
   const applyLook = (id) => {
     const root = document.documentElement;
     if (!LOOKS.some((l) => l.id === id)) return;
@@ -339,7 +340,7 @@
   VO.look = {
     /** [{ id, name, note, layout }] */
     list: () => LOOKS.map((l) => ({ ...l })),
-    get: () => document.documentElement.dataset.look || 'classic',
+    get: () => document.documentElement.dataset.look || DEFAULT_LOOK,
     /** 'bars' (menus and toolbars) or 'ribbon' */
     layout: () => document.documentElement.dataset.layout || 'bars',
     set(id) {

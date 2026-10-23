@@ -39,6 +39,7 @@ jobs:
         run: |
           test -f public/index.html
           node tools/csp.mjs --check
+          node --test tests/looks.test.mjs tests/csp.test.mjs
 
       - name: Build the bundle
         id: build
