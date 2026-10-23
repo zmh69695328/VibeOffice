@@ -26,12 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Node.js (site validation only)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -47,16 +47,13 @@ jobs:
           printf 'version=%s\n' "$(cat dist/VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibeoffice-site-${{ steps.build.outputs.version }}
           path: |
             dist/vibeoffice-site-*.tar.gz
             dist/vibeoffice-site-*.zip
-            dist/vibeoffice-site.tar.gz
-            dist/vibeoffice-site.zip
             dist/SHA256SUMS
-            dist/SHA256SUMS.latest
             dist/VERSION
             dist/build-info.json
           if-no-files-found: error

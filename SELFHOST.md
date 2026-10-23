@@ -80,14 +80,14 @@ WEB=/var/www/vibeoffice/site
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-curl -fsSL "$BASE/vibeoffice-site.tar.gz" -o "$TMP/site.tar.gz"
+curl -fsSL "$BASE/vibeoffice-site.tar.gz" -o "$TMP/vibeoffice-site.tar.gz"
 curl -fsSL "$BASE/SHA256SUMS.latest"     -o "$TMP/SHA256SUMS.latest"
 curl -fsSL "$BASE/VERSION"               -o "$TMP/VERSION"
 
 # 校验下载的包
 (cd "$TMP" && grep ' vibeoffice-site\.tar\.gz$' SHA256SUMS.latest | sha256sum -c -)
 
-tar -xzf "$TMP/site.tar.gz" -C "$TMP"
+tar -xzf "$TMP/vibeoffice-site.tar.gz" -C "$TMP"
 # 校验解包后的站点文件（可选，205 个文件）
 (cd "$TMP" && sha256sum -c SHA256SUMS.site)
 
